@@ -1,7 +1,7 @@
 # Tech Challenge — Fase 3 · Documentação Geral da Arquitetura
 
 Documentação arquitetural do sistema de **gestão de oficina mecânica** desenvolvido no
-Tech Challenge da Pós-Tech FIAP . Este repositório reúne a visão geral da
+Tech Challenge da Pós-Tech FIAP. Este repositório reúne a visão geral da
 solução — diagramas, RFCs, ADRs e a justificativa do banco de dados — e aponta para os
 quatro repositórios de implementação, cada um com código, Dockerfile, pipelines de CI/CD e README.
 
@@ -11,12 +11,12 @@ quatro repositórios de implementação, cada um com código, Dockerfile, pipeli
 - [Repositórios](#repositórios)
 - [Diagrama de componentes](#diagrama-de-componentes)
 - [Diagramas de sequência](#diagramas-de-sequência)
-- [RFCs](#rfcs--request-for-comments)
-- [ADRs](#adrs--architecture-decision-records)
+- [RFCs](#rfcs)
+- [ADRs](#adrs)
 - [Banco de dados: justificativa e modelo relacional](#banco-de-dados-justificativa-e-modelo-relacional)
 - [CI/CD e ambientes](#cicd-e-ambientes)
 - [Ordem de deploy](#ordem-de-deploy)
-- [APIs: Swagger, deploys ativos](#apis-swagger-postman-e-deploys-ativos)
+- [APIs: Swagger, deploys ativos](#apis-swagger-e-deploys-ativos)
 - [Estrutura deste repositório](#estrutura-deste-repositório)
 
 ---
@@ -250,7 +250,7 @@ erDiagram
 | Branch | Ambiente | Comportamento |
 |---|---|---|
 | `feature/*` → PR | — | `ci.yml` obrigatório para merge |
-| `develop` | **staging** (homologação) | Deploy automático (`STAGING_ENABLED=true` nos repositórios de infraestrutura) |
+| `develop` | **staging** (homologação) | Deploy automático desligado por padrão (`STAGING_ENABLED=true` nos repositórios de infraestrutura) |
 | `main` | **prod** | Deploy automático com **aprovação manual** no environment `production` |
 
 Regras comuns: `main` protegida, sem push direto, merge somente via Pull Request com CI

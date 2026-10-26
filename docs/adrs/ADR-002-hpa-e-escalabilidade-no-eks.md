@@ -61,6 +61,6 @@ gateway sem pagar capacidade ociosa.
 * [⚠️] Não há Cluster Autoscaler/Karpenter: se 5 réplicas da API + 5 do Kong não couberem
   nos nós atuais, pods ficam `Pending` até o node group ser aumentado (por PR no Terraform).
 * [⚠️] `rate-limiting` do Kong com `policy: local` conta por pod: com N réplicas o limite
-  efetivo é N × 10/min.
+  efetivo é N × 10/min (limite por pod; ver ADR-002).
 * [⚠️] Conexões no RDS crescem com as réplicas; o alarme `rds-conexoes` (> 80) é o gatilho
   para avaliar RDS Proxy.

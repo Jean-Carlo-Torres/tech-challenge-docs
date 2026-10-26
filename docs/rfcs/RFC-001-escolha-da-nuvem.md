@@ -2,6 +2,7 @@
 
 * **Status**: Aceita
 * **Data**: 2026-09-20
+* **Atualizado em**: 2026-10-24
 * **Autores**: Time do Tech Challenge (13SOAT)
 * **Repositórios afetados**: todos
 * **Decisões resultantes**: [ADR-002](../adrs/ADR-002-hpa-e-escalabilidade-no-eks.md), [ADR-004](../adrs/ADR-004-iac-terraform-multi-repositorio.md)

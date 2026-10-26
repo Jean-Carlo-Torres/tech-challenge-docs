@@ -87,7 +87,7 @@ flowchart TB
 
 | Componente | Tecnologia | Responsabilidade | Repositório |
 |---|---|---|---|
-| Rede | VPC 3 AZ, NAT único, subnets públicas/privadas com tags de descoberta | Isolar os ambientes `staging` e `prod`; subnets privadas para EKS, Lambda e RDS | [Infra K8s](https://github.com/DevKaue/TechChallenge---Infraestrutura-Kubernetes-com-Terraform) |
+| Rede | VPC 3 AZ, NAT único, subnets públicas/privadas com tags de descoberta | Isolar os ambientes `staging` e `prod`; subnets privadas para EKS, Lambda e RDS | [Infra K8s](https://github.com/thiagoalmeida88/TechChallenge---Infraestrutura-Kubernetes-com-Terraform) |
 | Cluster | Amazon EKS 1.35, managed node group (2..4 nós) | Executar a aplicação e o gateway | Infra K8s |
 | API Gateway | Kong Ingress Controller 3.9 (chart `kong/ingress` 0.24.0), DB-less, atrás de um NLB | Roteamento, validação de JWT, rate limit, correlation-id, métricas por rota e invocação da Lambda | Infra K8s (instalação) + App (rotas e plugins) |
 | Aplicação | NestJS + Prisma em container, Kustomize | Domínio da oficina: clientes, veículos, catálogo, peças, OS, orçamentos, métricas | [App](https://github.com/DevKaue/tech-challenge-app-) |

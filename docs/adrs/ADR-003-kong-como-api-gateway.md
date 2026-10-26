@@ -42,7 +42,7 @@ exposto por um **NLB** internet-facing.
 
 | Rota | Plugins | Destino |
 |---|---|---|
-| `POST /auth` | `aws-lambda`, `rate-limiting` (10/min/IP), `correlation-id`, `prometheus` | Lambda `techchallenge-auth-<env>` |
+| `POST /auth` | `aws-lambda`, `rate-limiting` (20/min/IP), `correlation-id`, `prometheus` | Lambda `techchallenge-auth-<env>` |
 | `POST /api/auth/login` | `rate-limiting`, `correlation-id`, `prometheus` | API (login de funcionário) |
 | `GET /api/health`, `GET /api/docs` | `correlation-id`, `prometheus` | API (público) |
 | `POST /api/service-orders/estimates/:id/external-status` | `correlation-id`, `prometheus` | API (webhook com HMAC) |
@@ -62,6 +62,7 @@ exposto por um **NLB** internet-facing.
 
 ### Negativas / Riscos
 
+* [⚠️] O Swagger em /api/docs é público e expõe a API inteira.
 * [⚠️] Sem TLS até haver domínio e certificado ACM.
 * [⚠️] No AWS Academy não há IRSA: o Kong invoca a Lambda com a `LabRole` do nó (IMDSv2).
 * [⚠️] Segredo HS256 único compartilhado por Kong, Lambda e App ([RFC-003](../rfcs/RFC-003-estrategia-de-autenticacao.md)).

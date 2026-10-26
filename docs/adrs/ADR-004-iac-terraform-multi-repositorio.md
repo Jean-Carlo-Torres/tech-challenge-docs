@@ -1,7 +1,7 @@
 # ADR 004: Infraestrutura como código em Terraform, com um repositório e um state por componente e ambiente
 
 * **Status**: Aceito
-* **Data**: 2026-10-01
+* **Data**: 2026-10-20
 * **Autores**: Time do Tech Challenge (13SOAT)
 * **Escopo**: Infra K8s, Database, Function Serverless
 
