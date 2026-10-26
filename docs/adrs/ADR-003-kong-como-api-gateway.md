@@ -42,7 +42,7 @@ exposto por um **NLB** internet-facing.
 
 | Rota | Plugins | Destino |
 |---|---|---|
-| `POST /auth` | `aws-lambda`, `rate-limiting` (20/min/IP), `correlation-id`, `prometheus` | Lambda `techchallenge-auth-<env>` |
+| `POST /auth` | `aws-lambda`, `rate-limiting`: 10/min por pod do Kong (`policy: local`; ver [ADR-002](ADR-002-hpa-e-escalabilidade-no-eks.md)), `correlation-id`, `prometheus` | Lambda `techchallenge-auth-<env>` |
 | `POST /api/auth/login` | `rate-limiting`, `correlation-id`, `prometheus` | API (login de funcionário) |
 | `GET /api/health`, `GET /api/docs` | `correlation-id`, `prometheus` | API (público) |
 | `POST /api/service-orders/estimates/:id/external-status` | `correlation-id`, `prometheus` | API (webhook com HMAC) |

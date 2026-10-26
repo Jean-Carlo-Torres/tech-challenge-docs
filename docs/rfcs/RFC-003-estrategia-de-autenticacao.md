@@ -56,7 +56,7 @@ cada um, e as rotas sensíveis precisam estar protegidas.
 
 | Camada | O que garante |
 |---|---|
-| Kong `rate-limiting` (10/min por IP) em `/auth` e `/api/auth/login` | Mitiga força bruta e enumeração |
+| Kong `rate-limiting` em `/auth` e `/api/auth/login`: 10/min por pod do Kong (`policy: local`; ver [ADR-002](../adrs/ADR-002-hpa-e-escalabilidade-no-eks.md)) | Mitiga força bruta e enumeração |
 | Kong `jwt` em `/api/*` (consumer pelo `iss`, verifica assinatura e `exp`) | Token **autêntico**; requisição inválida não chega à aplicação |
 | Aplicação (`JwtAuthGuard` + `RolesGuard` + `@CustomerAccess`) | Token **autorizado**: papel do funcionário, cliente ativo, posse da OS. Token de cliente só passa em rotas marcadas, e só para as próprias OS |
 

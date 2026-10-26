@@ -21,7 +21,7 @@ sequenceDiagram
     participant DB as RDS PostgreSQL
 
     C->>K: POST /auth {"cpf": "111.444.777-35"}
-    K->>K: rate-limiting (10/min por IP) + gera X-Correlation-ID
+    K->>K: rate-limiting: 10/min por pod do Kong (policy: local#59; ver ADR-002) + gera X-Correlation-ID
     K->>L: Invoke (plugin aws-lambda, evento REST v1.0)
 
     opt primeira invocação do container (cold start)
@@ -67,7 +67,7 @@ sequenceDiagram
     participant DB as RDS PostgreSQL
 
     F->>K: POST /api/auth/login {email, password}
-    K->>K: rota pública + rate-limiting (10/min por IP)
+    K->>K: rota pública + rate-limiting: 10/min por pod do Kong (policy: local#59; ver ADR-002)
     K->>A: encaminha com X-Correlation-ID
     A->>DB: SELECT users WHERE email = $1
     DB-->>A: usuário + password_hash

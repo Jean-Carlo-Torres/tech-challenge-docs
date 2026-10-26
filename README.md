@@ -271,7 +271,7 @@ Teardown na ordem inversa (`kubectl delete -k` da App **antes** de destruir a In
 
 ---
 
-## APIs: Swagger, Postman e deploys ativos
+## APIs: Swagger e deploys ativos
 
 Toda a API pública é exposta pelo **Kong**, no hostname do NLB do Service
 `kong-gateway-proxy` (namespace `kong`).
