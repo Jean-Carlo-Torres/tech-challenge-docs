@@ -1,8 +1,8 @@
 # Diagrama de Componentes
 
 Visão completa da solução da Fase 3: **nuvem (AWS)**, **APIs** (Kong, aplicação e Function
-Serverless), **banco de dados** (RDS PostgreSQL) e **monitoramento** (CloudWatch, Container
-Insights e métricas Prometheus do Kong). Cada caixa indica o repositório que a provisiona.
+Serverless), **banco de dados** (RDS PostgreSQL) e **monitoramento** (New Relic, CloudWatch,
+Container Insights e métricas Prometheus do Kong). Cada caixa indica o repositório que a provisiona.
 
 ## Visão geral
 
@@ -41,20 +41,22 @@ flowchart TB
                     KONG["Kong Gateway · HPA 2..5<br/>jwt · aws-lambda · rate-limiting<br/>correlation-id · prometheus"]:::gw
                 end
                 subgraph NSAPP["namespace techchallenge · repo App"]
-                    API["techchallenge-api (NestJS)<br/>HPA 2..5 por CPU · PDB<br/>/api/* · Swagger /api/docs"]:::app
+                    API["techchallenge-api (NestJS)<br/>HPA 3..5 por CPU · PDB · agente APM<br/>/api/* · Swagger /api/docs"]:::app
                 end
                 MS["metrics-server<br/>(alimenta o HPA)"]:::mon
                 CWA["amazon-cloudwatch-observability<br/>(Container Insights)"]:::mon
+                NRI["nri-bundle · namespace newrelic<br/>métricas de nós e pods, eventos,<br/>logs (Fluent Bit) e Prometheus agent"]:::mon
             end
 
             LAMBDA["Lambda techchallenge-auth-&lt;env&gt;<br/>Node 22 · imagem ECR<br/>valida CPF e emite JWT · repo Function"]:::fn
             RDS[("RDS PostgreSQL 15<br/>db.t4g.micro · cifrado · TLS obrigatório<br/>subnets privadas · repo Database")]:::data
         end
 
-        SSM["SSM Parameter Store<br/>/techchallenge/&lt;env&gt;/auth/jwt-secret<br/>/techchallenge/&lt;env&gt;/db/*<br/>/techchallenge/&lt;env&gt;/eks/node-sg-id"]:::data
+        SSM["SSM Parameter Store<br/>/techchallenge/&lt;env&gt;/auth/jwt-secret<br/>/techchallenge/&lt;env&gt;/db/*<br/>/techchallenge/&lt;env&gt;/eks/node-sg-id<br/>/techchallenge/&lt;env&gt;/newrelic/license-key"]:::data
         CW["CloudWatch<br/>Logs (API, Lambda, Postgres)<br/>4 alarmes + dashboard do RDS<br/>métricas nativas da Lambda"]:::mon
     end
 
+    NR["New Relic (SaaS)<br/>APM e traces · Logs · Dashboards<br/>Alertas · Synthetics"]:::mon
     EXT["Datadog / New Relic<br/>(forwarder opcional)"]:::mon
 
     CLI -->|"HTTP"| NLB
@@ -81,6 +83,9 @@ flowchart TB
     LAMBDA -->|"logs JSON + correlationId"| CW
     RDS -->|"métricas + logs postgresql"| CW
     CW -.->|"subscription filter"| EXT
+    NRI -->|"métricas, eventos e logs"| NR
+    API -->|"agente APM: traces e logs<br/>com correlationId e trace.id"| NR
+    NR -.->|"Synthetics: ping<br/>/api/health a cada 5 min"| NLB
 ```
 
 ## Componentes e responsabilidades
@@ -96,7 +101,7 @@ flowchart TB
 | Configuração e segredos | SSM Parameter Store (`String` / `SecureString`) | Contrato entre os repositórios: segredo JWT, endpoint/credenciais do banco, SG dos nós | Infra K8s + Database |
 | Registro de imagens | Amazon ECR | Imagens versionadas da API e da Lambda | Infra K8s (API) + Function (Lambda) |
 | State do IaC | S3 com versionamento e `use_lockfile` | State Terraform isolado por repositório e ambiente | Infra K8s (`bootstrap/`) |
-| Monitoramento | CloudWatch (Container Insights, Logs, alarmes, dashboard), plugin `prometheus` do Kong, forwarder opcional Datadog/New Relic | Saúde do cluster, latência e status por rota, logs estruturados com correlation-id, saúde do banco | Todos |
+| Monitoramento | New Relic (`nri-bundle` no cluster, agente APM na API, dashboards, alertas e Synthetics), CloudWatch (Container Insights, Logs, alarmes, dashboard), plugin `prometheus` do Kong | Saúde do cluster, traces e logs da API com correlation-id, volume e tempo por status das OS, uptime, saúde do banco | Infra K8s (`nri-bundle`) + App (agente e logs) + Todos |
 | CI/CD | GitHub Actions | Testes, build de imagem, `terraform plan/apply` com gate de aprovação em produção, `kubectl apply` com rollback | Todos |
 
 ## Observabilidade ponta a ponta
@@ -107,7 +112,11 @@ flowchart TB
 | Aplicação (EKS) | CPU/memória por pod e nó, reinícios, logs `stdout` dos containers | CloudWatch Container Insights |
 | Escalabilidade | Uso de CPU vs. request para o HPA da API e do Kong | `kubectl get hpa -A` (metrics-server) |
 | Function Serverless | Uma linha JSON por evento (`auth.success`, `auth.denied`, `db.error`...) com `correlationId`; `Invocations`, `Duration`, `Throttles` | CloudWatch Logs `/aws/lambda/techchallenge-auth-<env>` + métricas da Lambda |
+| Aplicação (New Relic) | Agente APM Node (`-r newrelic`) e logs JSON com `correlationId`, `trace.id` e eventos `http.request`, `http.error`, `service_order.created` e `service_order.status_changed` | New Relic: APM e Distributed tracing, Logs e dashboards por NRQL |
+| Cluster (New Relic) | `nri-bundle` (infraestrutura, kube-state-metrics, eventos do Kubernetes e logs) | New Relic: Kubernetes explorer, CPU e memória por pod, réplicas do HPA |
+| Uptime (New Relic) | Monitor Synthetics `techchallenge-health` (ping em `/api/health`) e alerta de falha | New Relic: Synthetic monitoring |
 | Banco (RDS) | Alarmes de CPU, memória livre, conexões e latência de escrita; queries > 1 s; `pg_stat_statements` | CloudWatch alarmes + dashboard `techchallenge-<env>-database` |
 
 O `X-Correlation-ID` gerado pelo Kong viaja até a Lambda e a aplicação, então um mesmo ID
-liga o log do gateway, o log da função e o log da API.
+liga o log do gateway, o log da função e o log da API. No New Relic, o mesmo
+`correlationId` filtra os logs da API, e o `trace.id` do log abre o trace da requisição.
