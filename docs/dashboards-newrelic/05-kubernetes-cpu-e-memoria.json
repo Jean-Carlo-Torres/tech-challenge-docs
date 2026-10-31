@@ -1,0 +1,341 @@
+{
+  "name": "Kubernetes: CPU e memória",
+  "description": null,
+  "permissions": "PUBLIC_READ_WRITE",
+  "pages": [
+    {
+      "name": "Kubernetes: CPU e memória",
+      "description": null,
+      "widgets": [
+        {
+          "title": "PU por pod da API (milicores)",
+          "layout": {
+            "column": 1,
+            "row": 1,
+            "width": 4,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.stacked-bar"
+          },
+          "rawConfiguration": {
+            "chartStyles": {
+              "gradient": {
+                "enabled": false
+              },
+              "seriesOrder": "original",
+              "stacked": {
+                "enabled": true
+              }
+            },
+            "facet": {
+              "showOtherSeries": false
+            },
+            "legend": {
+              "enabled": true
+            },
+            "markers": {
+              "displayedTypes": {
+                "annotations": true,
+                "criticalViolations": false,
+                "deployments": true,
+                "relatedDeployments": true,
+                "warningViolations": false
+              }
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  8666376
+                ],
+                "query": "-- CPU por pod da API (milicores)\r\nFROM K8sContainerSample SELECT average(cpuUsedCores) * 1000 AS 'mCPU'\r\nWHERE clusterName = 'techchallenge-prod' AND namespaceName = 'techchallenge' AND containerName = 'api'\r\nFACET podName SINCE 3 hours ago TIMESERIES\r\n"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            },
+            "thresholds": {
+              "isLabelVisible": true
+            }
+          }
+        },
+        {
+          "title": "Memória por pod da API (MiB) e uso do limite de 512Mi",
+          "layout": {
+            "column": 5,
+            "row": 1,
+            "width": 4,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.stacked-bar"
+          },
+          "rawConfiguration": {
+            "chartStyles": {
+              "gradient": {
+                "enabled": false
+              },
+              "seriesOrder": "original",
+              "stacked": {
+                "enabled": true
+              }
+            },
+            "facet": {
+              "showOtherSeries": false
+            },
+            "legend": {
+              "enabled": true
+            },
+            "markers": {
+              "displayedTypes": {
+                "annotations": true,
+                "criticalViolations": false,
+                "deployments": true,
+                "relatedDeployments": true,
+                "warningViolations": false
+              }
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  8666376
+                ],
+                "query": "-- Memória por pod da API (MiB) e uso do limite de 512Mi\r\nFROM K8sContainerSample SELECT max(memoryWorkingSetBytes) / 1048576 AS 'MiB',\r\nmax(memoryWorkingSetBytes) / max(memoryLimitBytes) * 100 AS '% do limite'\r\nWHERE clusterName = 'techchallenge-prod' AND namespaceName = 'techchallenge' AND containerName = 'api'\r\nFACET podName SINCE 3 hours ago"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            },
+            "thresholds": {
+              "isLabelVisible": true
+            }
+          }
+        },
+        {
+          "title": "Pods Pending (falta de CPU/memória nos nós)",
+          "layout": {
+            "column": 9,
+            "row": 1,
+            "width": 4,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.line"
+          },
+          "rawConfiguration": {
+            "chartStyles": {
+              "lineInterpolation": "linear",
+              "lineWidths": {
+                "lineWidth": 2.25
+              }
+            },
+            "facet": {
+              "showOtherSeries": false
+            },
+            "legend": {
+              "enabled": true
+            },
+            "markers": {
+              "displayedTypes": {
+                "annotations": true,
+                "criticalViolations": false,
+                "deployments": true,
+                "relatedDeployments": true,
+                "warningViolations": false
+              }
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  8666376
+                ],
+                "query": "-- Pods Pending (falta de CPU/memória nos nós)\r\nFROM K8sPodSample SELECT uniqueCount(podName) AS 'Pods Pending'\r\nWHERE clusterName = 'techchallenge-prod' AND status = 'Pending'\r\nSINCE 3 hours ago TIMESERIES\r\n"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            },
+            "thresholds": {
+              "isLabelVisible": true
+            },
+            "yAxisLeft": {
+              "zero": true
+            },
+            "yAxisRight": {
+              "zero": true
+            }
+          }
+        },
+        {
+          "title": "Folga dos nós (os 2 t3.medium são o gargalo do cluster)",
+          "layout": {
+            "column": 1,
+            "row": 4,
+            "width": 12,
+            "height": 4
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.line"
+          },
+          "rawConfiguration": {
+            "chartStyles": {
+              "lineInterpolation": "linear",
+              "lineWidths": {
+                "lineWidth": 2.25
+              }
+            },
+            "facet": {
+              "showOtherSeries": false
+            },
+            "legend": {
+              "enabled": true
+            },
+            "markers": {
+              "displayedTypes": {
+                "annotations": true,
+                "criticalViolations": false,
+                "deployments": true,
+                "relatedDeployments": true,
+                "warningViolations": false
+              }
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  8666376
+                ],
+                "query": "-- Folga dos nós (os 2 t3.medium são o gargalo do cluster)\r\nFROM K8sNodeSample SELECT average(cpuUsedCores) / average(allocatableCpuCores) * 100 AS 'CPU (%)',\r\naverage(memoryWorkingSetBytes) / average(allocatableMemoryBytes) * 100 AS 'Memória (%)'\r\nWHERE clusterName = 'techchallenge-prod'\r\nFACET nodeName SINCE 3 hours ago TIMESERIES"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            },
+            "thresholds": {
+              "isLabelVisible": true
+            },
+            "yAxisLeft": {
+              "zero": true
+            },
+            "yAxisRight": {
+              "zero": true
+            }
+          }
+        },
+        {
+          "title": "Réplicas disponíveis da API",
+          "layout": {
+            "column": 1,
+            "row": 8,
+            "width": 4,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.stacked-bar"
+          },
+          "rawConfiguration": {
+            "chartStyles": {
+              "gradient": {
+                "enabled": false
+              },
+              "seriesOrder": "original",
+              "stacked": {
+                "enabled": true
+              }
+            },
+            "facet": {
+              "showOtherSeries": false
+            },
+            "legend": {
+              "enabled": true
+            },
+            "markers": {
+              "displayedTypes": {
+                "annotations": true,
+                "criticalViolations": false,
+                "deployments": true,
+                "relatedDeployments": true,
+                "warningViolations": false
+              }
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  8666376
+                ],
+                "query": "-- Réplicas disponíveis da API\r\nFROM K8sDeploymentSample SELECT latest(podsAvailable) AS 'Disponíveis', latest(podsDesired) AS 'Desejadas'\r\nWHERE clusterName = 'techchallenge-prod' AND namespaceName = 'techchallenge' AND deploymentName = 'techchallenge'\r\nSINCE 3 hours ago TIMESERIES"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            },
+            "thresholds": {
+              "isLabelVisible": true
+            }
+          }
+        },
+        {
+          "title": "Reinícios de container (OOMKill aparece aqui)",
+          "layout": {
+            "column": 5,
+            "row": 8,
+            "width": 8,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.line"
+          },
+          "rawConfiguration": {
+            "chartStyles": {
+              "lineInterpolation": "linear",
+              "lineWidths": {
+                "lineWidth": 2.25
+              }
+            },
+            "facet": {
+              "showOtherSeries": false
+            },
+            "legend": {
+              "enabled": true
+            },
+            "markers": {
+              "displayedTypes": {
+                "annotations": true,
+                "criticalViolations": false,
+                "deployments": true,
+                "relatedDeployments": true,
+                "warningViolations": false
+              }
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  8666376
+                ],
+                "query": "-- Reinícios de container (OOMKill aparece aqui)\r\nFROM K8sContainerSample SELECT sum(restartCountDelta) AS 'Reinícios'\r\nWHERE clusterName = 'techchallenge-prod' AND namespaceName = 'techchallenge'\r\nFACET podName SINCE 24 hours ago TIMESERIES 30 minutes"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            },
+            "thresholds": {
+              "isLabelVisible": true
+            },
+            "yAxisLeft": {
+              "zero": true
+            },
+            "yAxisRight": {
+              "zero": true
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variables": []
+}
