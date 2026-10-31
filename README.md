@@ -17,6 +17,7 @@ quatro repositórios de implementação, cada um com código, Dockerfile, pipeli
 - [CI/CD e ambientes](#cicd-e-ambientes)
 - [Ordem de deploy](#ordem-de-deploy)
 - [APIs: Swagger, deploys ativos](#apis-swagger-e-deploys-ativos)
+- [Observabilidade: dashboards do New Relic](#observabilidade-dashboards-do-new-relic)
 - [Estrutura deste repositório](#estrutura-deste-repositório)
 
 ---
@@ -35,7 +36,7 @@ operacionais. Na Fase 3 a solução foi levada para a **AWS** com:
 | Cluster Kubernetes com escalabilidade | **Amazon EKS** + **HPA** na aplicação e no Kong ([ADR-002](docs/adrs/ADR-002-hpa-e-escalabilidade-no-eks.md)) |
 | Infraestrutura como código | **Terraform**, um state por repositório e ambiente ([ADR-004](docs/adrs/ADR-004-iac-terraform-multi-repositorio.md)) |
 | CI/CD | **GitHub Actions** em todos os repositórios: `develop` → staging, `main` → produção |
-| Monitoramento | **CloudWatch** (Container Insights, Logs, alarmes e dashboard do RDS), métricas **Prometheus** do Kong, forwarder opcional para Datadog/New Relic |
+| Monitoramento | **New Relic**: nri-bundle no EKS (métricas do cluster e logs), agente APM na API e [dashboards](docs/dashboards-newrelic/README.md) de volume de OS, tempo por status, erros, latência e CPU/memória. **CloudWatch** para o RDS (alarmes e dashboard), os logs da Lambda e o Container Insights do EKS |
 
 ---
 
@@ -44,7 +45,7 @@ operacionais. Na Fase 3 a solução foi levada para a **AWS** com:
 | # | Repositório | Responsabilidade | Dockerfile | CI/CD |
 |---|---|---|---|---|
 | 1 | [TechChallange---Function-Serverless](https://github.com/DevKaue/TechChallange---Function-Serverless) | Function Serverless (Lambda) de autenticação por CPF | ✅ imagem da Lambda | `ci.yml` (lint, testes, contratos, Terraform, imagem) · `deploy.yml` (ECR + Terraform + smoke pelo Kong) |
-| 2 | [TechChallenge---Infraestrutura-Kubernetes-com-Terraform](https://github.com/thiagoalmeida88/TechChallenge---Infraestrutura-Kubernetes-com-Terraform) | VPC, EKS, addons, ALB Controller, **Kong**, ECR, segredo JWT, OIDC | — (só IaC) | `ci.yml` (fmt + validate) · `deploy.yml` (plan → aprovação → apply) · `destroy.yml` |
+| 2 | [TechChallenge---Infraestrutura-Kubernetes-com-Terraform](https://github.com/thiagoalmeida88/TechChallenge---Infraestrutura-Kubernetes-com-Terraform) | VPC, EKS, addons, ALB Controller, **Kong**, **New Relic (nri-bundle)**, ECR, segredo JWT, OIDC | — (só IaC) | `ci.yml` (fmt + validate) · `deploy.yml` (plan → aprovação → apply) · `destroy.yml` |
 | 3 | [tech-challenge-database-infra](https://github.com/DevKaue/tech-challenge-database-infra) | RDS PostgreSQL, contrato de conexão no SSM, alarmes | — (só IaC) | `ci.yml` (fmt, validate, `terraform test`, Trivy) · `deploy.yml` (plan → guarda → apply → confere SSM) · `destroy.yml` |
 | 4 | [tech-challenge-app-](https://github.com/DevKaue/tech-challenge-app-) | Aplicação principal (NestJS) em Kubernetes, rotas e plugins do Kong | ✅ imagem da API | `ci.yml` (lint, unit, integração, Docker, manifestos) · `deploy.yml` (ECR + `kubectl apply -k` + rollback + smoke) |
 | — | **tech-challenge-docs** (este) | Documentação arquitetural transversal | — | — |
@@ -82,7 +83,8 @@ flowchart TB
             NLB["NLB"]:::gw
             subgraph EKS["Amazon EKS"]
                 KONG["Kong Gateway · HPA 2..5<br/>jwt · aws-lambda · rate-limiting<br/>correlation-id · prometheus"]:::gw
-                API["API NestJS · HPA 2..5<br/>/api/* · Swagger"]:::app
+                API["API NestJS · HPA 2..5<br/>/api/* · Swagger · agente APM"]:::app
+                NRB["nri-bundle<br/>métricas K8s · Fluent Bit"]:::mon
             end
             LAMBDA["Lambda auth CPF<br/>emite JWT"]:::fn
             RDS[("RDS PostgreSQL 15")]:::data
@@ -101,7 +103,10 @@ flowchart TB
     GHA -->|"build/push"| ECR
     GHA -->|"terraform / kubectl"| AWS
     GHA -.-> S3
-    EKS -->|"métricas/logs"| CW
+    NR["New Relic<br/>APM · logs · métricas · dashboards"]:::mon
+    API -->|"APM"| NR
+    NRB -->|"métricas do cluster + logs da API"| NR
+    EKS -->|"Container Insights"| CW
     LAMBDA -->|"logs JSON"| CW
     RDS -->|"métricas/logs"| CW
 ```
@@ -293,6 +298,28 @@ Toda a API pública é exposta pelo **Kong**, no hostname do NLB do Service
 
 ---
 
+## Observabilidade: dashboards do New Relic
+
+A telemetria do ambiente de produção vai para o **New Relic** por três canais: logs JSON
+da API (coletados pelo Fluent Bit do nri-bundle), agente APM da API e métricas do cluster
+(nri-bundle, instalado pelo `newrelic.tf` do repositório de Infra K8s). Os painéis estão
+versionados em [docs/dashboards-newrelic](docs/dashboards-newrelic/README.md), cada um
+como **JSON** (fonte, para reimportar) e **PNG** (captura com dados reais).
+
+| Requisito | Dashboard |
+|---|---|
+| Volume diário de ordens de serviço | [01 · Volume diário de OS](docs/dashboards-newrelic/README.md#01--volume-diário-de-ordens-de-serviço) |
+| Tempo médio de execução por status (diagnóstico, execução, finalização) | [02 · Tempo médio por status](docs/dashboards-newrelic/README.md#02--tempo-médio-de-execução-por-status) |
+| Erros e falhas nas integrações | [03 · Erros e falhas](docs/dashboards-newrelic/README.md#03--erros-e-falhas-nas-integrações) |
+| Latência das APIs | [04 · Latência das APIs](docs/dashboards-newrelic/README.md#04--latência-das-apis) |
+| Consumo de CPU e memória do cluster | [05 · Kubernetes: CPU e memória](docs/dashboards-newrelic/README.md#05--kubernetes-cpu-e-memória) |
+| Alertas | [06 · Alertas](docs/dashboards-newrelic/README.md#06--alertas-condições-nrql) |
+
+O RDS e a Lambda continuam monitorados pelo **CloudWatch** (alarmes e dashboard do banco,
+logs estruturados da função com `correlationId`).
+
+---
+
 ## Estrutura deste repositório
 
 ```text
@@ -311,6 +338,9 @@ Toda a API pública é exposta pelo **Kong**, no hostname do NLB do Service
     │   ├── ADR-002-hpa-e-escalabilidade-no-eks.md
     │   ├── ADR-003-kong-como-api-gateway.md
     │   └── ADR-004-iac-terraform-multi-repositorio.md
-    └── banco-de-dados/
-        └── modelo-relacional.md            # justificativa, ajustes, ER e relacionamentos
+    ├── banco-de-dados/
+    │   └── modelo-relacional.md            # justificativa, ajustes, ER e relacionamentos
+    └── dashboards-newrelic/
+        ├── README.md                       # requisitos × painéis, importação, pontos de atenção
+        └── 00..06-*.json / *.png           # export (fonte) e captura (evidência) de cada painel
 ```
