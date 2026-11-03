@@ -19,6 +19,7 @@ quatro repositórios de implementação, cada um com código, Dockerfile, pipeli
 - [APIs: Swagger, deploys ativos](#apis-swagger-e-deploys-ativos)
 - [Observabilidade: dashboards do New Relic](#observabilidade-dashboards-do-new-relic)
 - [Estrutura deste repositório](#estrutura-deste-repositório)
+- [Apresentação (Youtube)](#apresentação-youtube)
 
 ---
 
@@ -344,3 +345,6 @@ logs estruturados da função com `correlationId`).
         ├── README.md                       # requisitos × painéis, importação, pontos de atenção
         └── 00..06-*.json / *.png           # export (fonte) e captura (evidência) de cada painel
 ```
+
+## Apresentação (Youtube)
+- [Apresentação do Projeto (YouTube)](https://youtu.be/s52lsDYF6sU)
